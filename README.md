@@ -1,5 +1,3 @@
-# landos
-
 ## Project setup
 ```
 yarn install
