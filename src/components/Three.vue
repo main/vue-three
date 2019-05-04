@@ -1,8 +1,11 @@
 <template>
-    <canvas class="three_canvas" ref="threejs"></canvas>
+    <div class="three_container">
+        <canvas class="three_canvas" ref="threejs"></canvas>
+    </div>
 </template>
 
 <script>
+import { setTimeout, clearTimeout } from 'timers';
     const THREE = require('three')
 
     export default {
@@ -16,37 +19,78 @@
             // Create a renderer with Antialiasing
             const renderer = new THREE.WebGLRenderer({
                 canvas: this.$refs.threejs,
-                antialias:true
+                antialias: true
             })
             // Configure renderer clear color
             renderer.setClearColor("#000000")
             // Configure renderer size
             renderer.setSize( window.innerWidth, window.innerHeight )
-            // ------------------------------------------------
-            // FUN STARTS HERE
-            // ------------------------------------------------
-            // Create a Cube Mesh with basic material
-            var geometry = new THREE.BoxGeometry( 1, 1, 1 )
-            var material = new THREE.MeshBasicMaterial( { color: "#433F81" } )
-            var cube = new THREE.Mesh( geometry, material )
-            // Add cube to Scene
-            scene.add( cube )
-            // Render Loop
-            const render = function () {
-                requestAnimationFrame( render )
-                cube.rotation.x += 0.01
-                cube.rotation.y += 0.01
-                // Render the scene
-                renderer.render(scene, camera)
+
+            const render = this.init(renderer, scene, camera)
+
+            const rfn = () => {
+                render()
+                requestAnimationFrame(rfn)
             }
-            render()
+
+            requestAnimationFrame(rfn)
+
+            const resizeObserverCallback = (() => {
+                let w, h
+                return () => {
+                    if (
+                        w !== this.$el.clientWidth ||
+                        h !== this.$el.clientHeight
+                    ) {
+                        h = this.$el.clientHeight
+                        w = this.$el.clientWidth
+                        this.$refs.threejs.style.height = h + 'px'
+                        this.$refs.threejs.style.width = w + 'px'
+
+                        renderer.setSize( w, h )
+
+                        camera.aspect = w / h;
+                        camera.updateProjectionMatrix();
+                    }
+
+                    this._resizeObserverTimeout = setTimeout(resizeObserverCallback, 200)
+                }
+            })()
+
+            resizeObserverCallback()
+        },
+        beforeDestroy() {
+            clearTimeout(this._resizeObserverTimeout)
+        },
+        methods: {
+            // Should return render function
+            init(renderer, scene, camera) {
+                const geometry = new THREE.BoxGeometry( 1, 1, 1 )
+                const material = new THREE.MeshBasicMaterial( { color: "#433F81" } )
+                const cube = new THREE.Mesh( geometry, material )
+                
+                scene.add( cube )
+
+                return () => {
+                    cube.rotation.x += 0.01
+                    cube.rotation.y += 0.01
+                    
+                    renderer.render(scene, camera)
+                }
+            }
         }
     }
 </script>
 
 <style scoped>
+    .three_container {
+        /* display: block; */
+        margin: 0;
+        padding: 0;
+    }
     .three_canvas {
-        width: 100vw;
-        height: 100vh;
+        display: block;
+        margin: 0;
+        padding: 0;
     }
 </style>
